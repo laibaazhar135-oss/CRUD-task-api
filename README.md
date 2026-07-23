@@ -55,6 +55,10 @@ All endpoints can be tested interactively at `/docs` once the server is running:
 
 ## Notes
 
-- Data is stored in memory and resets every time the server restarts — this is intentional for this stage; a real database is introduced in Week 3.
+- Data is stored in memory and resets every time the server restarts — this is intentional for this stage
 - `POST` and `PUT` validate that `title` is present and non-empty, returning `400` with a JSON error if not.
 - Requesting a task that doesn't exist (`GET`, `PUT`, or `DELETE` on an invalid id) returns `404` with a JSON error.
+
+## Mortality experiment
+
+Restarting the server (`Ctrl+C`, then `node index.js`) resets the task list back to the original 3 example tasks — anything created, updated, or deleted before the restart is gone. This happens because tasks are stored only in memory (a plain JavaScript array), which exists only while the program is running. Nothing is written to disk. 

@@ -11,8 +11,36 @@ let tasks=[
   {id:3,title:"finish assignment",done:true}
 ];
 
+
+
 app.get('/tasks',(req,res)=>{
-res.json(tasks);
+ let result =tasks;
+ let doneFilter= req.query.done==='true';
+ if(req.query.done!==undefined){
+  result= result.filter(t=> t.done===doneFilter);
+ }
+
+ if(req.query.search){
+  let term=req.query.search.toLowerCase();
+  result=result.filter(t=> t.title.toLowerCase().includes(term));
+ }
+
+ res.json(result);
+});
+
+app.get('/stats',(req,res)=>{
+let total=tasks.length;
+let done=tasks.filter(t=> t.done).length;
+res.json({total,done,open:total-done});
+});
+
+app.post('/reset',(req,res)=>{
+ tasks=[
+     { id: 1, title: "Buy milk", done: false },
+    { id: 2, title: "Walk the dog", done: false },
+    { id: 3, title: "Finish assignment", done: true }
+ ]
+ res.json({message:`tasks reset`,tasks})
 });
 
 app.get('/tasks/:id',(req,res)=>{
