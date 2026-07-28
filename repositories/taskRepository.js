@@ -1,11 +1,5 @@
 const db = require('../db/connection');
 
-let tasks=[
-     { id: 1, title: "Buy milk", done: false },
-  { id: 2, title: "Walk the dog", done: false },
-  { id: 3, title: "Finish assignment", done: true }
-];
-
 function  findById(id){
   const row=db.prepare('SELECT * FROM tasks WHERE id=?').get(id);
   if(!row) return undefined;
