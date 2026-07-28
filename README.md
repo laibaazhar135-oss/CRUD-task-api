@@ -2,8 +2,7 @@
 
 A simple CRUD (Create, Read, Update, Delete) API for managing a to-do list, built with Node.js and Express as part of the FlyRank Backend AI Engineering internship (Week 2, Assignment 1).
 
-Tasks are stored in memory (no database yet ), and the API is fully documented and testable through an interactive Swagger UI page.
-
+Tasks are stored in a SQLite database, and the API is fully documented and testable through an interactive Swagger UI page.
 ## How to run it
 
 1. Clone this repository:
@@ -14,7 +13,7 @@ cd CRUD-task-api
 npm install
 
 3. Start the server:
-node index.js
+node --experimental-sqlite index.js
 
 4. The server runs at `http://localhost:3000`. Visit `http://localhost:3000/docs` in your browser for interactive API documentation (Swagger UI).
 
@@ -29,6 +28,8 @@ node index.js
 | POST | `/tasks` | Create a new task |
 | PUT | `/tasks/:id` | Update an existing task |
 | DELETE | `/tasks/:id` | Delete a task |
+
+
 
 ## Example request
 
@@ -55,7 +56,7 @@ All endpoints can be tested interactively at `/docs` once the server is running:
 
 ## Notes
 
-- Data is stored in memory and resets every time the server restarts — this is intentional for this stage
+- Data is stored in SQLite (`data/tasks.db`) and survives server restarts.
 - `POST` and `PUT` validate that `title` is present and non-empty, returning `400` with a JSON error if not.
 - Requesting a task that doesn't exist (`GET`, `PUT`, or `DELETE` on an invalid id) returns `404` with a JSON error.
 
