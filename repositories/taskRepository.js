@@ -26,26 +26,32 @@ function findall(){
 }
 
 function update(id,title,done){
- let task=tasks.find(t=> t.id===id);
- if(!task){
-   return null;
- }
- if(title!==undefined){
-   task.title=title;
- }
- if(done!==undefined){
-   task.done=done;
- }
- return task
+  const existing=db.prepare('SELECT * FROM tasks WHERE id=?').get(id);
+  if(!existing){
+    return null;
+  }
+  const newTitle=title!==undefined?title:existing.title;
+  const newDone=done!==undefined?(done?1:0):existing.done;
+  
+  db.prepare('UPDATE tasks SET title=?,done=? WHERE id=?').run(newTitle,newDone,id);
+  return {
+    id:id,
+    title:newTitle,
+    done:newDone==1
+  }
 }
 
 function del(id){
-  const index=tasks.findIndex(t=> t.id===id);
-  if(!index){
-    return -1;
-  }
-  const task=tasks.splice(index,1);
-  return task;
+   const existing=db.prepare('SELECT * FROM tasks WHERE id=?').get(id);
+   if(!existing){
+    return null;
+   }
+   db.prepare('DELETE FROM tasks WHERE id=?').run(id);
+   return {
+    id:id,
+    title:existing.title,
+    done:existing.done === 1
+   }
 }
 
 function create(title,done){
