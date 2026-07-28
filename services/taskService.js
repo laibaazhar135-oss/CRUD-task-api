@@ -33,7 +33,7 @@ function createTask(title,done){
      const newTask={
           title:title.trim(),
           id:newID,
-          done:done==='true'?true:false
+          done:done===undefined ? false : done
      }
      const created=taskRepository.create(newTask);
      return {task:created}
