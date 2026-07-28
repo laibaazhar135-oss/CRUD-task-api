@@ -28,14 +28,10 @@ function createTask(title,done){
      if(done!==undefined&&typeof done!=='boolean'){
           return {error:"done must me boolean"}
      }
-     const totaltasks=taskRepository.findall();
-     const newID=totaltasks.length>0?Math.max(...totaltasks.map(t=> t.id))+1:1;
-     const newTask={
-          title:title.trim(),
-          id:newID,
-          done:done===undefined ? false : done
-     }
-     const created=taskRepository.create(newTask);
+     
+     const finaldone=done===undefined ? false : done;
+     
+     const created=taskRepository.create(title.trim(),finaldone);
      return {task:created}
 }
 

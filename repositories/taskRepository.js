@@ -48,9 +48,14 @@ function del(id){
   return task;
 }
 
-function create(task){
- tasks.push(task);
- return task;
+function create(title,done){
+    const insert= db.prepare('INSERT INTO tasks (title,done) VALUES (?,?)');
+    const result = insert.run(title,done?1:0);
+    return {
+      id:result.lastInsertRowid,
+      title:title,
+      done:done
+    }
 }
 
 module.exports = {findById,findall,create,update,del};
