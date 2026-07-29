@@ -1,23 +1,24 @@
 let taskRepository= require('../repositories/taskRepository');
+const { search } = require('../routes/taskRoutes');
 
 function getTaskById(id){
      return taskRepository.findById(id);
 }
 
 function findalltasks(filters){
-  let result=taskRepository.findall();
 
   if(filters.done!==undefined){
      if(filters.done!=='true'&&filters.done!=='false'){
           return {error:"done must me true or false"};
      }
-     const doneFilter= filters.done==='true';
-      result= result.filter(t=> t.done===doneFilter);
   }
-  if(filters.search){
-     const term=filters.search.toLowerCase();
-     result= result.filter(t=> t.title.toLowerCase().includes(term));
-  }
+  const doneFilter= filters.done!==undefined?filters.done=='true':undefined;
+
+  const result=taskRepository.findall({
+     done:doneFilter,
+     search:filters.search
+  })
+
   return {tasks: result};
 }
 

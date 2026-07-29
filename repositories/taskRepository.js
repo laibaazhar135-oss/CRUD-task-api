@@ -10,13 +10,31 @@ function  findById(id){
   }
 }
 
-function findall(){
-  const row= db.prepare('SELECT * FROM tasks').all();
-  return row.map(r=>({
-        id:r.id,
-        title:r.title,
-        done:r.done===1
-  }));
+function findall(filters={}){
+ let query='SELECT * FROM  tasks';
+ let condition=[];
+ let params=[];
+
+ if(filters.done!==undefined){
+  condition.push('done=?');
+  params.push(filters.done?1:0);
+ }
+ if(filters.search){
+  condition.push('title LIKE ?');
+  params.push(`% ${filters.search}%`);
+ }
+ if(condition.length>0){
+ query+=' WHERE '+condition.join(' AND ');
+ }
+
+ console.log(query);
+ const rows=db.prepare(query).all(...params);
+ return rows.map(r=>({
+   id:r.id,
+   title:r.title,
+   done:r.done===1
+ }))
+
 }
 
 function update(id,title,done){
