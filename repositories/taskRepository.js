@@ -16,7 +16,9 @@ function  findById(id){
   return {
        id:row.id,
        title:row.title,
-       done:row.done===1
+       done:row.done===1,
+       created_at:row.created_at,
+      updated_at:row.updated_at
   }
 }
 
@@ -43,7 +45,9 @@ function findall(filters={}){
  return rows.map(r=>({
    id:r.id,
    title:r.title,
-   done:r.done===1
+   done:r.done===1,
+   created_at: r.created_at,
+    updated_at: r.updated_at
  }))
 
 }
@@ -56,11 +60,14 @@ function update(id,title,done){
   const newTitle=title!==undefined?title:existing.title;
   const newDone=done!==undefined?(done?1:0):existing.done;
   
-  db.prepare('UPDATE tasks SET title=?,done=? WHERE id=?').run(newTitle,newDone,id);
+  db.prepare("UPDATE tasks SET title=?,done=?,updated_at=datetime('now') WHERE id=?").run(newTitle,newDone,id);
+    const row = db.prepare('SELECT * FROM tasks WHERE id=?').get(id);
   return {
-    id:id,
-    title:newTitle,
-    done:newDone==1
+    id:row.id,
+    title:row.title,
+    done:row.done===1,
+    created_at: row.created_at,
+    updated_at: row.updated_at
   }
 }
 
@@ -73,17 +80,23 @@ function del(id){
    return {
     id:id,
     title:existing.title,
-    done:existing.done === 1
+    done:existing.done === 1,
+     created_at:existing.created_at,
+  updated_at:existing.updated_at
    }
 }
 
 function create(title,done){
     const insert= db.prepare('INSERT INTO tasks (title,done) VALUES (?,?)');
     const result = insert.run(title,done?1:0);
+    const row=db.prepare('SELECT * FROM tasks WHERE id=?').get(result.lastInsertRowid);
+
     return {
-      id:result.lastInsertRowid,
-      title:title,
-      done:done
+      id:row.id,
+      title:row.title,
+      done: row.done === 1,
+      created_at:row.created_at,
+      updated_at:row.updated_at
     }
 }
 

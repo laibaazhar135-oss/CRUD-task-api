@@ -9,7 +9,9 @@ db.exec(`
     CREATE TABLE IF NOT EXISTS tasks(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
-    done INTEGER NOT NULL DEFAULT 0
+    done INTEGER NOT NULL DEFAULT 0,
+    created_at NOT NULL DEFAULT (datetime('now')),
+    updated_at NOT NULL DEFAULT (datetime('now'))
     )
     `);
 

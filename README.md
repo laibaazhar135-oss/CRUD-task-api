@@ -29,7 +29,25 @@ node --experimental-sqlite index.js
 | PUT | `/tasks/:id` | Update an existing task |
 | DELETE | `/tasks/:id` | Delete a task |
 
+## Database
 
+This project uses **SQLite** for data persistence, chosen because it requires no separate database server or installation — the entire database lives in a single file, making it simple for anyone cloning this repository to run the project immediately.
+
+**Database file:** `data/tasks.db` — created automatically the first time the server runs. The `tasks` table is also created automatically if it doesn't exist, and 3 example tasks are inserted only if the table is empty.
+
+
+### Exploring the database manually
+
+The database can be opened and inspected directly using [DB Browser for SQLite](https://sqlitebrowser.org/).
+
+![Database viewer showing the tasks table](db-screenshot.png)
+
+Example query run directly against the database:
+
+sql
+SELECT * FROM tasks WHERE done = 1;
+
+This returns only the tasks marked as completed — demonstrating that the API and the database always stay in sync, since the API reads directly from this same table.
 
 ## Example request
 
@@ -59,11 +77,9 @@ All endpoints can be tested interactively at `/docs` once the server is running:
 - Data is stored in SQLite (`data/tasks.db`) and survives server restarts.
 - `POST` and `PUT` validate that `title` is present and non-empty, returning `400` with a JSON error if not.
 - Requesting a task that doesn't exist (`GET`, `PUT`, or `DELETE` on an invalid id) returns `404` with a JSON error.
-
+-"Timestamps are stored in UTC."
 ## Mortality experiment
-
-Restarting the server (`Ctrl+C`, then `node index.js`) resets the task list back to the original 3 example tasks — anything created, updated, or deleted before the restart is gone. This happens because tasks are stored only in memory (a plain JavaScript array), which exists only while the program is running. Nothing is written to disk. 
-
+tasks are stored in a real SQLite database (see the Database section above), and data now correctly survives server restarts.
 
 ## AI vs me
 
