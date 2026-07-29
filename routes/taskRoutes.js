@@ -2,6 +2,11 @@ const express=require('express');
 const router= express.Router();
 const taskService=require('../services/taskService');
 
+router.get('/stats',(req,res)=>{
+    const result=taskService.getStats();
+    res.json(result);
+})
+
 router.get('/tasks/:id',(req,res)=>{
     const id=parseInt(req.params.id);
     if(isNaN(id)){
@@ -13,7 +18,7 @@ router.get('/tasks/:id',(req,res)=>{
         return res.status(404).json({error:`task ${id} not found`});
     }
     res.json(task);
-});
+}); 
 
 router.get('/tasks',(req,res)=>{
  const result= taskService.findalltasks(req.query);

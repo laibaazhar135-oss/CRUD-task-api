@@ -1,6 +1,10 @@
 let taskRepository= require('../repositories/taskRepository');
 const { search } = require('../routes/taskRoutes');
 
+function getStats(){
+     return taskRepository.getStats();
+}
+
 function getTaskById(id){
      return taskRepository.findById(id);
 }
@@ -58,4 +62,4 @@ function delTask(id){
    return {task:result};
 }
 
-module.exports={getTaskById,findalltasks,createTask,updateTask,delTask};
+module.exports={getTaskById,findalltasks,createTask,updateTask,delTask,getStats};

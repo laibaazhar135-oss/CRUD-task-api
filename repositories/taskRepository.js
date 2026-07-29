@@ -1,5 +1,15 @@
 const db = require('../db/connection');
 
+function getStats(){
+  const total=db.prepare('SELECT COUNT(*) AS count FROM tasks ').get().count;
+  const done=db.prepare('SELECT COUNT(*)  AS count FROM tasks WHERE done=1').get().count;
+  return {
+    total:total,
+    done:done,
+    open:total-done
+  }
+}
+
 function  findById(id){
   const row=db.prepare('SELECT * FROM tasks WHERE id=?').get(id);
   if(!row) return undefined;
@@ -26,6 +36,7 @@ function findall(filters={}){
  if(condition.length>0){
  query+=' WHERE '+condition.join(' AND ');
  }
+ query+=' ORDER BY title ';
 
  console.log(query);
  const rows=db.prepare(query).all(...params);
@@ -76,4 +87,4 @@ function create(title,done){
     }
 }
 
-module.exports = {findById,findall,create,update,del};
+module.exports = {findById,findall,create,update,del,getStats};
