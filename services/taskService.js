@@ -1,15 +1,14 @@
-let taskRepository= require('../repositories/taskRepository');
-const { search } = require('../routes/taskRoutes');
+let taskRepository= require('../repositories/postgresTaskRepository');
 
-function getStats(){
-     return taskRepository.getStats();
+async function getStats(){
+     return await taskRepository.getStats();
 }
 
-function getTaskById(id){
-     return taskRepository.findById(id);
+async function getTaskById(id){
+     return await taskRepository.findById(id);
 }
 
-function findalltasks(filters){
+async function findalltasks(filters){
 
   if(filters.done!==undefined){
      if(filters.done!=='true'&&filters.done!=='false'){
@@ -18,7 +17,7 @@ function findalltasks(filters){
   }
   const doneFilter= filters.done!==undefined?filters.done=='true':undefined;
 
-  const result=taskRepository.findall({
+  const result=await taskRepository.findall({
      done:doneFilter,
      search:filters.search
   })
@@ -26,7 +25,7 @@ function findalltasks(filters){
   return {tasks: result};
 }
 
-function createTask(title,done){
+async function createTask(title,done){
      if(typeof title!=='string'||title.trim().length===0){
           return {error:"Title is required and must me a non-empty string"}
      }
@@ -36,26 +35,26 @@ function createTask(title,done){
      
      const finaldone=done===undefined ? false : done;
      
-     const created=taskRepository.create(title.trim(),finaldone);
+     const created=await taskRepository.create(title.trim(),finaldone);
      return {task:created}
 }
 
-function updateTask(id,title,done){
- if(typeof title!=='string'|| title.trim().length===0){
+async function updateTask(id,title,done){
+ if(title!==undefined&&(typeof title!=='string'|| title.trim().length===0)){
      return {error:"title is required and must be a non empty string"};
  }
  if(done!==undefined&&typeof done!=='boolean'){
      return {error:"done must be in boolean"};
  }
- const updatedTask=taskRepository.update(id,title,done);
+ const updatedTask=await taskRepository.update(id,title,done);
  if(!updatedTask){
      return {error:`task ${id} not found`,notFound:true}
  }
  return {task:updatedTask};
 }
 
-function delTask(id){
-   const result=taskRepository.del(id);
+async function delTask(id){
+   const result=await taskRepository.del(id);
    if(!result){
      return {error:`task ${id} not found`};
    }

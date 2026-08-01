@@ -12,7 +12,7 @@ function getStats(){
 
 function  findById(id){
   const row=db.prepare('SELECT * FROM tasks WHERE id=?').get(id);
-  if(!row) return undefined;
+  if(!row) return null;
   return {
        id:row.id,
        title:row.title,
@@ -33,14 +33,13 @@ function findall(filters={}){
  }
  if(filters.search){
   condition.push('title LIKE ?');
-  params.push(`% ${filters.search}%`);
+  params.push(`%${filters.search}%`);
  }
  if(condition.length>0){
  query+=' WHERE '+condition.join(' AND ');
  }
  query+=' ORDER BY title ';
 
- console.log(query);
  const rows=db.prepare(query).all(...params);
  return rows.map(r=>({
    id:r.id,

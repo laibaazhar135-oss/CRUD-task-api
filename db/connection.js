@@ -10,15 +10,15 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     done INTEGER NOT NULL DEFAULT 0,
-    created_at NOT NULL DEFAULT (datetime('now')),
-    updated_at NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
     `);
 
 const row=db.prepare('SELECT COUNT(*) AS count FROM tasks').get();
 
 if(row.count===0){
-    const insert=db.prepare('INSERT INTO TASKS (title,done) VALUES (?,?)');
+    const insert=db.prepare('INSERT INTO tasks (title,done) VALUES (?,?)');
      insert.run('Buy milk', 0);
   insert.run('Walk the dog', 0);
   insert.run('Finish assignment', 0);

@@ -95,3 +95,54 @@ application back end developer to write code and also by junior developer. I wan
 **What I learned about my own prompt:**
 My prompt was messy (dictated, not written cleanly), which likely required more back-and-forth correction than a clearly written prompt would have. I also left the id-generation and done-default behavior unspecified — both turned out to be real ambiguities that produced different results between my code and the AI's.
 
+## W3 · A1 — Postgres + Docker
+
+### What changed from Assignment 2
+
+The in-memory/SQLite storage was replaced with a real PostgreSQL database running in Docker. **The API's routes and business logic (services layer) did not change in behavior** — only a new repository file (`repositories/postgresTaskRepository.js`) was added, implementing the exact same functions (`findById`, `findall`, `create`, `update`, `del`, `getStats`) using Postgres instead of SQLite. `taskService.js` was updated to `async`/`await` since Postgres calls are asynchronous (network-based) unlike SQLite's synchronous calls — this was the only structural change required outside the repository layer, confirming the layered architecture worked as intended: swapping storage did not require rewriting any validation or routing logic.
+
+The original SQLite repository (`taskRepository.js`) is kept in the repo intentionally, for comparison.
+
+### How to run
+
+```bash
+docker compose up
+```
+
+This starts both the Postgres database and the Node app together, from a single command. On first run against a fresh volume, `db/init.sql` runs automatically, creating the `tasks` table and seeding 3 example tasks.
+
+The API is available at `http://localhost:3000`, same endpoints as Assignment 1/2.
+
+### Environment variables
+
+Copy `.env.example` to `.env` and fill in your own values before running:
+
+DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/tasksdb
+PORT=3000
+
+`.env` is gitignored and never committed.
+
+### Persistence proof
+
+To confirm data survives a full restart, not just a pause:
+
+1. Created a task via `POST /tasks` (`{"title":"Persistence test task"}`) → got back `id: 4`.
+2. Ran `docker compose down` — this stops and removes both containers, but does **not** delete the named volume (`tasks-pgdata`).
+3. Ran `docker compose up` again — fresh containers created.
+4. `GET /tasks` showed all 4 tasks, including the one created before the restart — confirming data persisted independently of the containers' lifecycle.
+
+### A real issue hit and resolved
+
+While testing, the app returned `password authentication failed for user "postgres"` even after confirming `.env` and the container's `POSTGRES_PASSWORD` matched exactly. Running `netstat -ano | findstr :5432` revealed **two separate processes** listening on port 5432 — a native Postgres installation (from an earlier, unrelated Odoo workshop) was running as an auto-starting Windows service and intercepting the connection before it ever reached the Docker container. Uninstalling that native service resolved the issue immediately. Lesson: when a correctly-configured connection still fails auth, check for port conflicts with `netstat` before re-checking credentials.
+
+### Endpoint table
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/tasks` | List all tasks (supports `?done=` and `?search=`) |
+| GET | `/tasks/:id` | Get a single task |
+| POST | `/tasks` | Create a task |
+| PUT | `/tasks/:id` | Update a task |
+| DELETE | `/tasks/:id` | Delete a task |
+| GET | `/stats` | Task counts (total/done/open) |
+
