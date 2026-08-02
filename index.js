@@ -5,6 +5,7 @@ const taskRoutes=require('./routes/taskRoutes');
 const swaggerUi=require("swagger-ui-express");
 const openapiDocument=require("./openapi.json");
 const errorHandler=require('./middleware/errorHandler');
+const {redisClient,connectRedis}=require('./db/redisConnection');
 
 app.use(express.json());
 
@@ -15,6 +16,12 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ status: "ok" });
 });
+
+app.get('/redis-ping',async(req,res)=>{
+  await connectRedis();
+  const result=await redisClient.ping();
+   res.json({redis:result});
+})
 
 app.use(taskRoutes);
 

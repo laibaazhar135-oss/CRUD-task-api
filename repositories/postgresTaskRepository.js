@@ -16,7 +16,7 @@ async function getStats() {
 async function findById(id) {
     const result=await pool.query('SELECT * FROM tasks WHERE id=$1',[id]);
     if(result.rows.length===0) return null;
-    const row=result.row[0];
+    const row=result.rows[0];
     return{
         id:row.id,
         title:row.title,
@@ -36,7 +36,7 @@ async function findall(filters={}) {
     }    
     if(filters.search){
         params.push(`%${filters.search}%`);
-        condition.push(` title ILIKE ${params.length}`);
+        condition.push(` title ILIKE $${params.length}`);
     }
    if(condition.length>0){
     query+=' WHERE '+condition.join(' AND ');
@@ -65,7 +65,7 @@ async function create(title,done) {
 }
 
 async function update(id,title,done) {
-    const existing=pool.query('SELECT * FROM tasks WHERE id=$1',[id]);
+    const existing=await pool.query('SELECT * FROM tasks WHERE id=$1',[id]);
     if(existing.rows.length===0) return null;
     
     const row=existing.rows[0];
@@ -88,7 +88,7 @@ async function del(id) {
     const existing= await pool.query('SELECT * FROM tasks WHERE id=$1',[id]);
     if(existing.rows.length===0) return null;
     const row=existing.rows[0];
-    pool.query('DELETE FROM tasks WHERE id=$1',[id]);
+    await pool.query('DELETE FROM tasks WHERE id=$1',[id]);
     return{
         id:row.id,
         title:row.title,

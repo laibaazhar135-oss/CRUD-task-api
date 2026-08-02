@@ -146,3 +146,6 @@ While testing, the app returned `password authentication failed for user "postgr
 | DELETE | `/tasks/:id` | Delete a task |
 | GET | `/stats` | Task counts (total/done/open) |
 
+### Stretch goals
+
+**Redis added to the stack.** `redis:7` runs alongside `app` and `db` in `docker-compose.yml`. Confirmed working via a `/redis-ping` route that calls Redis's own `PING` command and returns the response:
