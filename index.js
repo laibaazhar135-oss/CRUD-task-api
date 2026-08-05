@@ -6,6 +6,7 @@ const swaggerUi=require("swagger-ui-express");
 const openapiDocument=require("./openapi.json");
 const errorHandler=require('./middleware/errorHandler');
 const {redisClient,connectRedis}=require('./db/redisConnection');
+const supabase=require('./db/supabaseConnection');
 
 app.use(express.json());
 
@@ -33,8 +34,16 @@ app.use((req,res)=>{
 
 app.use(errorHandler);
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Server running at http://localhost:${port}`);
+  try{
+    const {error}=await supabase.auth.getSession();
+    if(error) throw error;
+    console.log('server running and connected to supabase');
+  }
+    catch(err){
+        console.log('Failed to connect to supabse: ',err.message);
+    }
 });
 
 

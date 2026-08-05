@@ -72,7 +72,7 @@ async function update(id,title,done) {
     const newTitle=title!==undefined?title:row.title;
     const newDone=done!==undefined?done:row.done;
 
-    const result=await pool.query('UPDATE tasks SET title=$1,done=$2,updated_at= NOW() WHERE id=$3',(newTitle,newDone,id));
+    const result=await pool.query('UPDATE tasks SET title=$1,done=$2,updated_at= NOW() WHERE id=$3 RETURNING *',[newTitle,newDone,id]);
     
     const r=result.rows[0];
     return{
