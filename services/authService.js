@@ -21,9 +21,7 @@ async function signup(email,password) {
 });
     if(error){
         console.log('signup error',error.message);
-        if(error.message.includes('already exists')||error.message.includes('already registered')){
-            return {error:'An account with this Email already exists,try to login!'}
-        }
+        
         return {error:'Could not create account.Please check your details then try'}
     }
     return {
@@ -69,4 +67,23 @@ function extractBearerToken(authHeader){
    }
    return {token:token}
 }
-module.exports={toSafeuser,signup,login,extractBearerToken};
+
+async function verifyToken(token) {
+    const {data,error} = await supabase.auth.getUser(token);
+    if(error){
+        console.error('invalid token',error.message)
+        return {error:'Invalid or expired token'}
+    }
+    return {user: toSafeuser(data.user)}
+}
+
+async function logout(token, scope = 'local') {
+    const {error}=await supabase.auth.admin.signOut(token,scope);
+    if(error){
+        console.error('Logout error',error.message)
+        return {error:'Could not logout'}
+    }
+    return {success:true}
+}
+
+module.exports={toSafeuser,signup,login,extractBearerToken,verifyToken,logout};
