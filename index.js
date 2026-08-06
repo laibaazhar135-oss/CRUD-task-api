@@ -7,6 +7,7 @@ const openapiDocument=require("./openapi.json");
 const errorHandler=require('./middleware/errorHandler');
 const {redisClient,connectRedis}=require('./db/redisConnection');
 const supabase=require('./db/supabaseConnection');
+const authRoutes = require('./routes/authRoutes');
 
 app.use(express.json());
 
@@ -23,9 +24,9 @@ app.get('/redis-ping',async(req,res)=>{
   const result=await redisClient.ping();
    res.json({redis:result});
 })
+app.use(authRoutes);
 
 app.use(taskRoutes);
-
 app.use('/docs',swaggerUi.serve,swaggerUi.setup(openapiDocument));
 
 app.use((req,res)=>{
@@ -33,6 +34,7 @@ app.use((req,res)=>{
 })
 
 app.use(errorHandler);
+
 
 app.listen(port, async () => {
   console.log(`Server running at http://localhost:${port}`);
