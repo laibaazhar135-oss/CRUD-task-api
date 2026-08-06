@@ -51,4 +51,22 @@ async function login(email,password) {
         user: toSafeuser(data.user)
     }
 }
-module.exports={toSafeuser,signup,login};
+function extractBearerToken(authHeader){
+   if(!authHeader){
+    return {error:'Access token required'}
+   }
+   const parts=authHeader.split(' ');
+   if(parts.length!==2){
+    return {error:'Access token required'}
+   }
+   const scheme=parts[0];
+   const token=parts[1];
+   if(scheme.toLowerCase()!=='bearer'){
+    return {error:'Access token required'}
+   }
+   if(!token||token.length===0){
+    return {error: 'Access token required'}
+   }
+   return {token:token}
+}
+module.exports={toSafeuser,signup,login,extractBearerToken};

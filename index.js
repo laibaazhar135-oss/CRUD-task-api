@@ -8,6 +8,7 @@ const errorHandler=require('./middleware/errorHandler');
 const {redisClient,connectRedis}=require('./db/redisConnection');
 const supabase=require('./db/supabaseConnection');
 const authRoutes = require('./routes/authRoutes');
+const gateRoutes= require('./routes/gateRoutes');
 
 app.use(express.json());
 
@@ -25,8 +26,9 @@ app.get('/redis-ping',async(req,res)=>{
    res.json({redis:result});
 })
 app.use(authRoutes);
-
+app.use(gateRoutes);
 app.use(taskRoutes);
+
 app.use('/docs',swaggerUi.serve,swaggerUi.setup(openapiDocument));
 
 app.use((req,res)=>{
