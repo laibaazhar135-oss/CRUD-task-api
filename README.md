@@ -148,4 +148,191 @@ While testing, the app returned `password authentication failed for user "postgr
 
 ### Stretch goals
 
-**Redis added to the stack.** `redis:7` runs alongside `app` and `db` in `docker-compose.yml`. Confirmed working via a `/redis-ping` route that calls Redis's own `PING` command and returns the response:
+**Redis added to the stack.** `redis:7` runs alongside `app` and `db` in `docker-compose.yml`. Confirmed working via a `/redis-ping` route that calls Redis's own `PING` command and returns the response.
+
+## W4 · A1 — Auth: Login & Protect
+
+### What This Project Is
+
+This extends the Task API (Assignments 1-3) with user authentication. Previously, every endpoint was open to anyone. Now, signup/login is handled through **Supabase Auth** (an external Identity Provider), and specific routes require a valid, verified JWT (JSON Web Token) before returning data.
+
+The task data itself (Postgres, Docker) is unchanged from Assignment 3 — this assignment adds an authentication layer on top of the same backend.
+
+---
+
+### Architecture
+
+- **`routes/authRoutes.js`** — signup, login, logout (identity)
+- **`routes/gateRoutes.js`** — public and protected example routes (access control)
+- **`services/authService.js`** — validation, Supabase calls, token extraction/verification
+- **`middleware/authMiddleware.js`** — reusable guard, verifies Bearer token before allowing a route to run
+- **No repository layer for auth** — Supabase Auth itself is the data layer; there's no local `users` table to own.
+
+---
+
+### Setting Up Local Environment Variables
+
+1. Copy `.env.example` to a new file named `.env`
+2. Fill in your own values:
+
+```
+DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/tasksdb
+PORT=3000
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+```
+
+3. `SUPABASE_URL` and `SUPABASE_KEY` (anon/publishable key) are found in your Supabase Dashboard → Project Settings → API.
+4. `.env` is gitignored and never committed. Never use the Supabase **service_role/secret key** here — only the anon/publishable key.
+
+---
+
+### How to Run It
+
+1. Start Postgres + Redis in Docker:
+```bash
+docker compose up -d db redis
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start the server:
+```bash
+node index.js
+```
+
+4. Server runs at `http://localhost:3000`. Interactive docs available at `http://localhost:3000/docs`.
+
+---
+
+### API Reference
+
+| Method | Endpoint | Auth Required? | Description |
+|---|---|---|---|
+| POST | `/auth/signup` | No | Create a new user account |
+| POST | `/auth/login` | No | Authenticate and receive access/refresh tokens |
+| POST | `/auth/logout` | **Yes** (Bearer token) | Revoke the current session |
+| GET | `/public/info` | No | Open endpoint, no restrictions |
+| GET | `/protected/profile` | **Yes** (Bearer token) | Returns the verified user's own profile |
+| GET | `/protected/dashboard` | **Yes** (Bearer token) | Example second protected route, uses same middleware |
+
+**Existing task endpoints (Assignments 1-3, unchanged):** `GET/POST /tasks`, `GET/PUT/DELETE /tasks/:id`, `GET /stats` — no auth required currently.
+
+---
+
+### How Authentication Works
+
+1. Client sends `email`/`password` to `/auth/signup` or `/auth/login`.
+2. Supabase validates credentials and returns a JWT **access token** (short-lived) and **refresh token** (long-lived).
+3. Client stores the access token and sends it on protected requests as:
+   ```
+   Authorization: Bearer <access_token>
+   ```
+4. `authMiddleware.js` extracts and verifies this token on every protected route:
+   - **Format check** first (missing header, wrong scheme, empty token) — rejected locally, no network call, before anything else.
+   - **Cryptographic/session verification** second — calls Supabase to confirm the token is real, unexpired, and tied to a live session.
+5. If both checks pass, the route handler runs and the verified user's data (`req.user`) is available to it.
+
+---
+
+### Status Codes Used
+
+| Code | Meaning | When |
+|---|---|---|
+| 200 | OK | Successful login, successful profile read |
+| 201 | Created | Successful signup |
+| 204 | No Content | Successful logout |
+| 400 | Bad Request | Missing/invalid email or password — never reached Supabase |
+| 401 | Unauthorized | Missing/malformed/invalid/expired token, or wrong login credentials |
+
+---
+
+### Security Decisions Made
+
+- **Generic error messages on signup/login** — never reveal whether a specific email is already registered, or whether a login failed due to wrong email vs wrong password. This prevents **user enumeration** (an OWASP-documented attack where an attacker learns which emails have accounts by reading differing error messages).
+- **Only the Supabase anon/publishable key is used** throughout — the service_role/secret key (full admin access) is intentionally avoided everywhere except the one function that requires it (see note below).
+- **`toSafeUser()` whitelist** — the client only ever receives `id`, `email`, `created_at` from Supabase's user object, never Supabase's raw internal user object (which could include unexpected fields in future SDK versions).
+- **Bearer scheme parsing is case-insensitive** (`Bearer`, `bearer`, `BEARER` all accepted), matching RFC 7235 — but the token itself is treated as case-sensitive, since JWTs are.
+- **Format validation happens before any network call** — malformed tokens are rejected instantly and locally, so Supabase is never queried with obvious garbage input.
+
+---
+
+### Known Limitation — Logout & JWTs
+
+JWTs are **stateless** — a token stays cryptographically valid until its own expiry, regardless of "logout," unless the server explicitly revokes it. Our logout function calls `supabase.auth.admin.signOut(token, scope)`, which does correctly revoke that specific session server-side (verified by testing — reusing the same token after logout correctly returns 401).
+
+For a real production app, this would typically be paired with **short-lived access tokens + refresh token rotation**, so that even an unrevoked leaked token expires quickly. That is intentionally out of scope for this assignment and is a planned next step before using this pattern on a real client project.
+
+---
+
+### Swagger UI
+
+All endpoints are documented and testable at `/docs`, including protected routes (marked with a padlock icon). Click **Authorize**, paste a raw access token (no "Bearer " prefix needed), and test the full flow directly in the browser.
+
+![Swagger UI with Bearer auth](swagger-auth-screenshot.png)
+
+---
+
+### Testing Performed
+
+- ✅ Signup success → 201
+- ✅ Signup with missing/invalid email or password → 400
+- ✅ Signup with duplicate email → 400, generic message (no enumeration leak)
+- ✅ Login success → 200 + access_token + refresh_token + user
+- ✅ Login with wrong password → 401, generic message
+- ✅ `/protected/profile` with no token → 401
+- ✅ `/protected/profile` with malformed header → 401
+- ✅ `/protected/profile` with valid token → 200 + real user data
+- ✅ `/protected/profile` with tampered token → 401
+- ✅ `/auth/logout` with valid token → 204
+- ✅ Reusing the same token after logout on `/protected/profile` → 401 (confirms real revocation)
+- ✅ `/public/info` always returns 200, regardless of auth
+- ✅ Full flow tested via curl AND via Swagger UI "Try it out"
+
+## Stage 7 — AI vs Me
+
+### My Prompt
+
+> "Write backend code for authentication flow: write code as layer architecture, write proper logical and secure code after checking and confirm it that its logical and secure. Create code for authentication flow using supabase for auth and use express. Write api endpoints for signup, login, logout, for authentication, use proper status codes where required at every point, for example: if user sends wrong credential at login then it should send 401 the invalid credential message back. Write routes for one public and one private info, the code should be structured and layered. Write swagger doc details for this code as well so I could test the apis with swagger and curl as well."
+
+Deliberately kept vague on exact field names, exact status codes for every case, Bearer token format rules, logout revocation depth, and folder structure — to see what the AI would assume by default.
+
+---
+
+### What the AI Did Better
+
+- Proactively documented its own known limitations in its README (logout only revokes the refresh token) without being asked — good transparency, even though the framing needed independent verification against Supabase's own docs before trusting it.
+
+---
+
+### What It Got Wrong or Quietly Ignored
+
+1. **500 error instead of 400** — Login with a completely missing email field crashed with an uncaught 500 error instead of a controlled 400. Cause: no `typeof`/existence check before calling a string method on the missing field. My code checks `typeof email !== 'string'` first, so it never reaches that crash.
+
+2. **Bearer scheme is case-sensitive** — Only accepted exact `Bearer`, rejected lowercase `bearer`. Not compliant with RFC 7235, which specifies the scheme name is case-insensitive. My code lowercases the scheme before comparing, so it accepts both.
+
+3. **Logout returned 200 instead of 204** — The assignment spec asks for 204 ("No Content") on successful logout. The AI's version returned 200 with a response body instead.
+
+4. **Logout created its own client/session handling differently than expected**, requiring correction to align with the simpler approach my code already used (single shared client, `admin.signOut(token, scope)` with the anon key).
+
+5. **Over-modularized structure** — Without being told my actual folder layout, the AI split the code into more files/folders than my project uses (separate `controllers/`, `validators/`, `config/`, `docs/` folders, on top of `routes/` and `services/`). My project keeps auth logic in `routes/`, `services/`, `middleware/`, and `utils/` only — no controller or validator split, since validation lives directly inside the service functions.
+
+---
+
+### What My Prompt Forgot to Specify — What the AI Silently Decided For Me
+
+- Exact request body field names (it guessed correctly, but this was luck, not specification).
+- Bearer token parsing rules (case sensitivity) — AI silently chose case-sensitive matching, a real gap only found through curl testing.
+- The exact status code for logout (204) — AI defaulted to 200.
+- My exact folder/file structure — AI defaulted to a heavier, more "textbook" architecture than the project needed.
+
+---
+
+### Known Limitation — Both Versions Share This 
+
+Access tokens issued by Supabase are stateless JWTs. Per Supabase's own documentation: **"Access Tokens of revoked sessions remain valid until their expiry time, encoded in the exp claim."** Calling `signOut()` (in any form — anon-key or admin) revokes the refresh token, but the already-issued access token itself cannot be server-side revoked before its natural expiry — this is a documented, fundamental property of stateless JWTs, not a bug in either my code or the AI's code.
+
+**Mitigation approach used in this project:** logout revokes the refresh token so the session cannot be renewed going forward. The remaining access-token exposure window is accepted for this learning project and would be closed in a real production app by (a) setting a short JWT expiry in Supabase's Auth settings, and/or (b) adding a per-request session check against `auth.sessions` for sensitive operations — both are documented, standard approaches, and planned as a next step before using this pattern on a real client project.

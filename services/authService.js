@@ -79,6 +79,7 @@ async function verifyToken(token) {
 
 async function logout(token, scope = 'local') {
     const {error}=await supabase.auth.admin.signOut(token,scope);
+    console.log('ADMIN SIGNOUT ERROR:', error);
     if(error){
         console.error('Logout error',error.message)
         return {error:'Could not logout'}
